@@ -31,12 +31,14 @@ local modulesToLoad = {
 local loadedModules = {
 }
 
-local defaultOptions = {
+default = {
 	unicodeWhitespace = true,
 	initialObject = false
 }
 
-default = nil -- Let the buildCapture optimization take place
+local modes_defined = { "default", "strict", "simple" }
+
+simple = {}
 
 strict = {
 	unicodeWhitespace = true,
@@ -47,14 +49,22 @@ strict = {
 util.register_type("VALUE")
 for _,name in ipairs(modulesToLoad) do
 	local mod = require("json.decode." .. name)
-	defaultOptions[name] = mod.default
-	strict[name] = mod.strict
+	for _, mode in pairs(modes_defined) do
+		if mod[mode] then
+			_M[mode][name] = mod[mode]
+		end
+	end
 	loadedModules[name] = mod
 	-- Register types
 	if mod.register_types then
 		mod.register_types()
 	end
 end
+
+-- Shift over default into defaultOptions to permit build optimization
+local defaultOptions = default
+default = nil
+
 
 local function buildDecoder(mode)
 	mode = mode and merge({}, defaultOptions, mode) or defaultOptions
@@ -75,15 +85,23 @@ local function buildDecoder(mode)
 	end
 	-- HOOK VALUE TYPE WITH WHITESPACE
 	grammar[value_id] = ignored * grammar[value_id] * ignored
-	grammar = lpeg.P(grammar) * ignored * -1
+	grammar = lpeg.P(grammar) * ignored * lpeg.Cp() * -1
 	return function(data)
-		local ret, err = lpeg.match(grammar, data)
-		assert(nil ~= ret, err or "Invalid JSON data")
+		local ret, next_index = lpeg.match(grammar, data)
+		assert(nil ~= next_index, "Invalid JSON data")
 		return ret
 	end
 end
 
-local strictDecoder, defaultDecoder = buildDecoder(strict), buildDecoder(default)
+-- Since 'default' is nil, we cannot take map it
+local defaultDecoder = buildDecoder(default)
+local prebuilt_decoders = {}
+for _, mode in pairs(modes_defined) do
+	if _M[mode] ~= nil then
+		prebuilt_decoders[_M[mode]] = buildDecoder(_M[mode])
+	end
+end
+
 --[[
 Options:
 	number => number decode options
@@ -95,10 +113,9 @@ Options:
 ]]
 function getDecoder(mode)
 	mode = mode == true and strict or mode or default
-	if mode == strict and strictDecoder then
-		return strictDecoder
-	elseif mode == default and defaultDecoder then
-		return defaultDecoder
+	local decoder = mode == nil and defaultDecoder or prebuilt_decoders[mode]
+	if decoder then
+		return decoder
 	end
 	return buildDecoder(mode)
 end
