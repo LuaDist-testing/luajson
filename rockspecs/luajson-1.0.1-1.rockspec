@@ -1,17 +1,7 @@
--- This file was automatically generated for the LuaDist project.
-
 package = "luajson"
-version = "1.0-1"
--- LuaDist source
+version = "1.0.1-1"
 source = {
-  tag = "1.0-1",
-  url = "git://github.com/LuaDist-testing/luajson.git"
 }
--- Original source
--- source = {
--- 	url = "http://luaforge.net/frs/download.php/4105/luajson-1.0.tar.bz2",
--- 	md5 = "0e3ee192f93d40c4947e828668828e91"
--- }
 description = {
 	summary = "customizable JSON decoder/encoder",
 	detailed = [[
@@ -30,6 +20,8 @@ dependencies = {
 build = {
 	type = "module",
 	modules = {
+		["json"] = "lua/json.lua",
+		["json.decode"] = "lua/json/decode.lua",
 		["json.decode.array"] = "lua/json/decode/array.lua",
 		["json.decode.calls"] = "lua/json/decode/calls.lua",
 		["json.decode.number"] = "lua/json/decode/number.lua",
@@ -37,7 +29,7 @@ build = {
 		["json.decode.others"] = "lua/json/decode/others.lua",
 		["json.decode.strings"] = "lua/json/decode/strings.lua",
 		["json.decode.util"] = "lua/json/decode/util.lua",
-		["json.decode"] = "lua/json/decode.lua",
+		["json.encode"] = "lua/json/encode.lua",
 		["json.encode.array"] = "lua/json/encode/array.lua",
 		["json.encode.calls"] = "lua/json/encode/calls.lua",
 		["json.encode.number"] = "lua/json/encode/number.lua",
@@ -46,8 +38,7 @@ build = {
 		["json.encode.output"] = "lua/json/encode/output.lua",
 		["json.encode.output_utility"] = "lua/json/encode/output_utility.lua",
 		["json.encode.strings"] = "lua/json/encode/strings.lua",
-		["json.encode"] = "lua/json/encode.lua",
-		["json.util"] = "lua/json/util.lua",
-		["json"] = "lua/json.lua"
+		["json.util"] = "lua/json/util.lua"
 	}
 }
+
