@@ -10,7 +10,10 @@ local util = require("json.util")
 local ipairs, pairs = ipairs, pairs
 local require = require
 
-local util_merge = require("json.decode.util").merge
+local output = require("json.encode.output")
+
+local util = require("json.util")
+local util_merge, isCall = util.merge, util.isCall
 
 module("json.encode")
 
@@ -86,6 +89,23 @@ local function encodeWithMap(value, map, state)
 	error("Failed to encode value, encoders for " .. t .. " deny encoding")
 end
 
+
+local function getBaseEncoder(options)
+	local encoderMap = prepareEncodeMap(options)
+	if options.preProcess then
+		local preProcess = options.preProcess
+		return function(value, state)
+			local ret = preProcess(value)
+			if nil ~= ret then
+				value = ret
+			end
+			return encodeWithMap(value, encoderMap, state)
+		end
+	end
+	return function(value, state)
+		return encodeWithMap(value, encoderMap, state)
+	end
+end
 --[[
 	Retreive an initial encoder instance based on provided options
 	the initial encoder is responsible for initializing state
@@ -93,25 +113,30 @@ end
 ]]
 function getEncoder(options)
 	options = options and util_merge({}, defaultOptions, options) or defaultOptions
-	local encoderMap = prepareEncodeMap(options)
-	local function encode(value, state)
+	local encode = getBaseEncoder(options)
+
+	local function initialEncode(value)
 		if options.initialObject then
 			local errorMessage = "Invalid arguments: expects a JSON Object or Array at the root"
-			assert(type(value) == 'table' and not call.isCall(value, options), errorMessage)
+			assert(type(value) == 'table' and not isCall(value, options), errorMessage)
 		end
-		return encodeWithMap(value, encoderMap, state)
-	end
-	local function initialEncode(value)
+
 		local alreadyEncoded = {}
 		local function check_unique(value)
 			assert(not alreadyEncoded[value], "Recursive encoding of value")
 			alreadyEncoded[value] = true
 		end
+
+		local outputEncoder = options.output and options.output() or output.getDefault()
 		local state = {
 			encode = encode,
-			check_unique = check_unique
+			check_unique = check_unique,
+			outputEncoder = outputEncoder
 		}
-		return encode(value, state)
+		local ret = encode(value, state)
+		if nil ~= ret then
+			return outputEncoder.simple and outputEncoder.simple(ret) or ret
+		end
 	end
 	return initialEncode
 end

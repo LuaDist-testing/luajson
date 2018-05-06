@@ -5,13 +5,9 @@
 local lpeg = require("lpeg")
 
 local util = require("json.decode.util")
-local strings = require("json.decode.strings")
-local number = require("json.decode.number")
-
 local jsonutil = require("json.util")
 
 local ipairs = ipairs
-local tonumber = tonumber
 local unpack = unpack
 
 module("json.decode.array")
@@ -34,39 +30,38 @@ local function processArray(array)
 end
 
 local defaultOptions = {
-	trailingComma = true,
-	depthLimiter = nil
+	trailingComma = true
 }
 
 default = nil -- Let the buildCapture optimization take place
 strict = {
-	trailingComma = false,
-	depthLimiter = util.buildDepthLimit(20)
+	trailingComma = false
 }
 
-function buildCapture(options, global_options)
+local function buildCapture(options, global_options)
 	local ignored = global_options.ignored
 	-- arrayItem == element
-	local arrayItem = lpeg.V(util.VALUE)
+	local arrayItem = lpeg.V(util.types.VALUE)
 	local arrayElements = lpeg.Ct(arrayItem * (ignored * lpeg.P(',') * ignored * arrayItem)^0 + 0) / processArray
 
-	options = options and util.merge({}, defaultOptions, options) or defaultOptions
-	local incDepth, decDepth
-	if options.depthLimiter then
-		incDepth, decDepth = unpack(options.depthLimiter)
-	end
+	options = options and jsonutil.merge({}, defaultOptions, options) or defaultOptions
 	local capture = lpeg.P("[")
-	if incDepth then
-		capture = capture * lpeg.P(incDepth)
-	end
 	capture = capture * ignored
 		* arrayElements * ignored
 	if options.trailingComma then
 		capture = capture * (lpeg.P(",") + 0) * ignored
 	end
 	capture = capture * lpeg.P("]")
-	if decDepth then
-		capture = capture * lpeg.P(decDepth)
-	end
 	return capture
+end
+
+function register_types()
+	util.register_type("ARRAY")
+end
+
+function load_types(options, global_options, grammar)
+	local capture = buildCapture(options, global_options)
+	local array_id = util.types.ARRAY
+	grammar[array_id] = capture
+	util.append_grammar_item(grammar, "VALUE", lpeg.V(array_id))
 end
