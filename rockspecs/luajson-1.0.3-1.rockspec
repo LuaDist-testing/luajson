@@ -1,17 +1,7 @@
--- This file was automatically generated for the LuaDist project.
-
 package = "luajson"
-version = "1.0.1-1"
--- LuaDist source
+version = "1.0.3-1"
 source = {
-  tag = "1.0.1-1",
-  url = "git://github.com/LuaDist-testing/luajson.git"
 }
--- Original source
--- source = {
--- 	url = "http://luaforge.net/frs/download.php/4311/luajson-1.0.1.tar.bz2",
--- 	md5 = "f6d52689e0bc4cbbfffff29308e78812"
--- }
 description = {
 	summary = "customizable JSON decoder/encoder",
 	detailed = [[
@@ -51,3 +41,4 @@ build = {
 		["json.util"] = "lua/json/util.lua"
 	}
 }
+
