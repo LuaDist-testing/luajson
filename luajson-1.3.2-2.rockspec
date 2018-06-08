@@ -1,10 +1,10 @@
 -- This file was automatically generated for the LuaDist project.
 
 package = "luajson"
-version = "1.3.2-1"
+version = "1.3.2-2"
 -- LuaDist source
 source = {
-  tag = "1.3.2-1",
+  tag = "1.3.2-2",
   url = "git://github.com/LuaDist-testing/luajson.git"
 }
 -- Original source
@@ -24,7 +24,6 @@ description = {
 }
 dependencies = {
 	"lua >= 5.1",
-	"lunit >= 0.4",
 	"lpeg >= 0.8.1"
 }
 build = {
