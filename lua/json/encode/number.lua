@@ -1,3 +1,7 @@
+--[[
+	Licensed according to the included 'LICENSE' document
+	Author: Thomas Harning Jr <harningt@gmail.com>
+]]
 local tostring = tostring
 local assert = assert
 local util = require("json.util")
@@ -6,11 +10,7 @@ module("json.encode.number")
 
 local defaultOptions = {
 	nan = true,
-	inf = true,
--- N/A - cannot tell encoder not to use fractions, exponents, or hex-form
---	frac = true,
---	exp = true,
---	hex = false
+	inf = true
 }
 
 default = nil -- Let the buildCapture optimization take place
@@ -30,7 +30,7 @@ local function encodeNumber(number, options)
 		return "Infinity"
 	end
 	if str == "-inf" then
-		assert(options.inf, "Invalid number: -Infinity not enabled")
+		assert(options.inf, "Invalid number: Infinity not enabled")
 		return "-Infinity"
 	end
 	return str

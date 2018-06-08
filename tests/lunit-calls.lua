@@ -72,18 +72,60 @@ end
 -- Test for a function that is not a function
 function test_not_a_function_fail()
 	local notFunction = {
-		0/0, 1/0, -1/0, 0, 1, "Hello", true, false, {}, coroutine.create(function() end)
+		0/0, 1/0, -1/0, 0, 1, "Hello", {}, coroutine.create(function() end)
 	}
 	for _, v in ipairs(notFunction) do
 		assert_error(function()
 			local strict = {
 				calls = { defs = {
 					call = v
-				} }
+				}, allowUndefined = false }
 			}
 			json.decode.getDecoder(strict)
 		end)
 	end
+end
+
+function test_not_permitted_fail()
+	local strict = {
+		calls = {
+			defs = { call = false }
+		}
+	}
+	local decoder = json.decode.getDecoder(strict)
+	assert_error(function()
+		decoder("call(1)")
+	end)
+end
+
+function test_permitted()
+	local strict = {
+		calls = {
+			defs = { call = true }
+		}
+	}
+	local decoder = json.decode.getDecoder(strict)
+	assert(decoder("call(1)").name == 'call')
+end
+
+function test_not_defined_fail()
+	local decoder = json.decode.getDecoder({
+		calls = {
+			allowUndefined = false
+		}
+	})
+	assert_error(function()
+		decoder("call(1)")
+	end)
+end
+
+function test_not_defined_succeed()
+	local decoder = json.decode.getDecoder({
+		calls = {
+			allowUndefined = true
+		}
+	})
+	assert(decoder("call(1)").name == 'call')
 end
 
 -- Test for a name that is not a string
@@ -93,10 +135,11 @@ function test_name_not_string()
 	}
 	for _, v in ipairs(notString) do
 		assert_error(function()
+			local defs = {
+				[v] = function() end
+			}
 			local strict = {
-				calls = { defs = {
-					[v] = function() end
-				} }
+				calls = { defs = defs }
 			}
 			json.decode.getDecoder(strict)
 		end)
@@ -124,40 +167,5 @@ function test_name_matches_string_or_pattern()
 		}
 		json.decode.getDecoder(strict)(value .. "(true)")
 		assert_true(matched, "Value <" .. value .. "> did not match the given pattern")
-	end
-end
-
--- Test for enabled/disabled multiargument calling
-function test_multi_arguments()
-	local argumentRets = {
-		[""] = 0,
-		["1"] = 1,
-		["1,2"] = 2,
-		["\"A\",1,true,false"] = 4
-	}
-	local function func(capturedName, ...)
-		return select('#', ...)
-	end
-	local successParams = {
-		calls = { defs = {
-			f = func
-		}, multiArgument = true }
-	}
-	local failParams = {
-		calls = { defs = {
-			f = func
-		}, multiArgument = false }
-	}
-	local successDecoder = json.decode.getDecoder(successParams)
-	local failDecoder = json.decode.getDecoder(failParams)
-	for args, count in pairs(argumentRets) do
-		local f = "f(" .. args .. ")"
-		local decodedCount = successDecoder(f)
-		assert_equal(count, decodedCount, "Failed to decode correct count")
-		if count ~= 1 then
-			assert_error(function()
-				failDecoder(f)
-			end)
-		end
 	end
 end

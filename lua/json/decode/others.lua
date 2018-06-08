@@ -1,3 +1,7 @@
+--[[
+	Licensed according to the included 'LICENSE' document
+	Author: Thomas Harning Jr <harningt@gmail.com>
+]]
 local lpeg = require("lpeg")
 local jsonutil = require("json.util")
 local util = require("json.decode.util")
@@ -24,8 +28,8 @@ strict = {
 	allowUndefined = false
 }
 
-function buildCapture(options)
-	options = options and util.merge({}, defaultOptions, options) or defaultOptions
+local function buildCapture(options)
+	options = options and jsonutil.merge({}, defaultOptions, options) or defaultOptions
 	local valueCapture = (
 		booleanCapture
 		+ nullCapture * lpeg.Cc(options.null)
@@ -34,4 +38,9 @@ function buildCapture(options)
 		valueCapture = valueCapture + undefinedCapture * lpeg.Cc(options.undefined)
 	end
 	return valueCapture
+end
+
+function load_types(options, global_options, grammar)
+	local capture = buildCapture(options)
+	util.append_grammar_item(grammar, "VALUE", capture)
 end

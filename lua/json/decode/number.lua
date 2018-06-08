@@ -4,19 +4,16 @@
 ]]
 local lpeg = require("lpeg")
 local tonumber = tonumber
+local merge = require("json.util").merge
 local util = require("json.decode.util")
 
 module("json.decode.number")
 
-local simple_space = lpeg.S(" \t")
-
 local digit  = lpeg.R("09")
 local digits = digit^1
 
--- Deviation from JSON spec: Leading zeroes, inf number negatives w/ space
-int = lpeg.P('-')^0 * simple_space^0 * digits
+int = (lpeg.P('-') + 0) * (lpeg.R("19") * digits + digit)
 local int = int
-local strictInt = (lpeg.P('-') + 0) * (lpeg.R("19") * digits + digit)
 
 local frac = lpeg.P('.') * digits
 
@@ -37,32 +34,27 @@ local defaultOptions = {
 default = nil -- Let the buildCapture optimization take place
 strict = {
 	nan = false,
-	inf = false,
-	strict = true
+	inf = false
 }
 --[[
 	Options: configuration options for number rules
 		nan: match NaN
 		inf: match Infinity
-	 strict: for integer portion, only match [-]([0-9]|[1-9][0-9]*)
 	   frac: match fraction portion (.0)
 	    exp: match exponent portion  (e1)
 	DEFAULT: nan, inf, frac, exp
-		Must be set to false
 ]]
-function buildMatch(options)
-	options = options and util.merge({}, defaultOptions, options) or defaultOptions
-	local ret
-	if options.hex then
-		ret = hex + (options.strict and strictInt or int)
-	else
-		ret = options.strict and strictInt or int
-	end
+local function buildMatch(options)
+	options = options and merge({}, defaultOptions, options) or defaultOptions
+	local ret = int
 	if options.frac then
 		ret = ret * (frac + 0)
 	end
 	if options.exp then
 		ret = ret * (exp + 0)
+	end
+	if options.hex then
+		ret = hex + ret
 	end
 	if options.nan then
 		ret = ret + nan
@@ -73,6 +65,17 @@ function buildMatch(options)
 	return ret
 end
 
-function buildCapture(options)
+local function buildCapture(options)
 	return buildMatch(options) / tonumber
+end
+
+function register_types()
+	util.register_type("INTEGER")
+end
+
+function load_types(options, global_options, grammar)
+	local integer_id = util.types.INTEGER
+	local capture = buildCapture(options)
+	util.append_grammar_item(grammar, "VALUE", capture)
+	grammar[integer_id] = int / tonumber
 end

@@ -1,8 +1,12 @@
+--[[
+	Licensed according to the included 'LICENSE' document
+	Author: Thomas Harning Jr <harningt@gmail.com>
+]]
 local tostring = tostring
 
 local assert = assert
 local jsonutil = require("json.util")
-local util_merge = require("json.decode.util").merge
+local util_merge = require("json.util").merge
 local type = type
 
 module("json.encode.others")
@@ -27,7 +31,7 @@ function getEncoder(options)
 		if value == options.null then
 			return 'null'
 		elseif value == options.undefined then
-			assert(options.allowUndefined, "Invalid value: Unsupported 'Undefines' parameter")
+			assert(options.allowUndefined, "Invalid value: Unsupported 'Undefined' parameter")
 			return 'undefined'
 		else
 			return false

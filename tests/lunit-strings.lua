@@ -36,33 +36,6 @@ function setup()
 	_G["decode"] = json.decode.getDecoder(false)
 end
 
-function test_encoder_preprocess()
-	local opts = {
-		strings = {
-			preProcess = function(str)
-				return str:gsub("world", "land")
-			end
-		}
-	}
-	assert_equal([["Hello land"]], json.encode("Hello world", opts))
-end
-
-function test_post_process()
-	local opts = {
-		strings = {
-			postProcess = function(value)
-				-- Test that value processed is after escape handling
-				assert_equal("test\n", value)
-				return "arg"
-			end
-		}
-	}
-	local decode = json.decode.getDecoder(opts)
-	local ret = decode([["test\n"]])
-	-- Test that returned values are used
-	assert_equal("arg", ret)
-end
-
 function test_strict_quotes()
 	local opts = {
 		strings = {
@@ -162,5 +135,33 @@ function test_whitespace_ignore()
 			v = v:gsub("%%WS%%", ws)
 			assert_true(nil ~= json.decode(v))
 		end
+	end
+end
+
+function test_u_encoding()
+	local encoder = json.encode.getEncoder()
+	local decoder = json.decode.getDecoder()
+	for i = 0, 255 do
+		local char = string.char(i)
+		assert_equal(char, decoder(encoder(char)))
+	end
+end
+
+function test_x_encoding()
+	local encoder = json.encode.getEncoder({ strings = { xEncode = true } })
+	local decoder = json.decode.getDecoder()
+	for i = 0, 255 do
+		local char = string.char(i)
+		assert_equal(char, decoder(encoder(char)))
+	end
+end
+
+function test_strict_decoding()
+	local encoder = json.encode.getEncoder(json.encode.strict)
+	local decoder = json.decode.getDecoder(json.decode.strict)
+	for i = 0, 255 do
+		local char = string.char(i)
+		-- Must wrap character in array due to decoder strict-ness
+		assert_equal(char, decoder(encoder({char}))[1])
 	end
 end

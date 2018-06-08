@@ -7,6 +7,10 @@ local select = select
 local pairs, ipairs = pairs, ipairs
 local tonumber = tonumber
 local string_char = string.char
+
+local error = error
+local setmetatable = setmetatable
+
 module("json.decode.util")
 
 -- 09, 0A, 0B, 0C, 0D, 20
@@ -51,57 +55,38 @@ ascii_ignored = (ascii_space + comment)^0
 
 unicode_ignored = (unicode_space + comment)^0
 
-VALUE, TABLE, ARRAY = 2, 3, 4
-function clone(t)
-	local ret = {}
-	for k,v in pairs(t) do
-		ret[k] = v
+local types = setmetatable({false}, {
+	__index = function(self, k)
+		error("Unknown type: " .. k)
 	end
-	return ret
+})
+
+function register_type(name)
+	types[#types + 1] = name
+	types[name] = #types
+	return #types
 end
 
-function merge(t, ...)
-	for i = 1,select('#', ...) do
-		local currentTable = select(i, ...)
-		if currentTable then
-			for k,v in pairs(currentTable) do
-				t[k] = v
-			end
-		end
-	end
-	return t
-end
+_M.types = types
 
-inits = {}
-
-function doInit()
-	for _, v in ipairs(inits) do
-		v()
+function append_grammar_item(grammar, name, capture)
+	local id = types[name]
+	local original = grammar[id]
+	if original then
+		grammar[id] = original + capture
+	else
+		grammar[id] = capture
 	end
 end
-
--- Current depth is persistent
--- If more complex depth management needed, a new system would need to be setup
-local currentDepth = 0
-
-function buildDepthLimit(limit)
-	local function init()
-		currentDepth = 0
-	end
-	inits[#inits + 1] = init
-
-	local function incDepth(s, i)
-		currentDepth = currentDepth + 1
-		return currentDepth < limit and i or false
-	end
-	local function decDepth(s, i)
-		currentDepth = currentDepth - 1
-		return i
-	end
-	return {incDepth, decDepth}
-end
-
 
 -- Parse the lpeg version skipping patch-values
 -- LPEG <= 0.7 have no version value... so 0.7 is value
 DecimalLpegVersion = lpeg.version and tonumber(lpeg.version():match("^(%d+%.%d+)")) or 0.7
+
+function get_invalid_character_info(input, index)
+	local parsed = input:sub(1, index)
+	local bad_character = input:sub(index, index)
+	local _, line_number = parsed:gsub('\n',{})
+	local last_line = parsed:match("\n([^\n]+.)$") or parsed
+	return line_number, #last_line, bad_character, last_line
+end

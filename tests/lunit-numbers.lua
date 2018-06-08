@@ -77,7 +77,7 @@ function test_expression()
 end
 
 -- For strict tests, small concession must be made to allow non-array/objects as root
-local strict = json.decode.util.merge({}, json.decode.strict, {initialObject = false})
+local strict = json.util.merge({}, json.decode.strict, {initialObject = false})
 local strictDecoder = json.decode.getDecoder(strict)
 
 local numberValue = {hex = true}
@@ -111,6 +111,24 @@ function test_hex_only()
 		assert_equal(v, decode(("0x%X"):format(v)))
 		assert_equal(v, decode(("0X%x"):format(v)))
 	end
+end
+
+local decimal_hexes = {
+	"0x0.1",
+	"0x.1",
+	"0x0e+1",
+	"0x0E-1"
+}
+function test_no_decimal_hex_only()
+	for _, str in ipairs(decimal_hexes) do
+		assert_error(function()
+			hexDecoder(str)
+		end)
+	end
+end
+
+function test_nearly_scientific_hex_only()
+	assert_equal(0x00E1, hexDecoder("0x00e1"))
 end
 
 local function buildStrictDecoder(f)
