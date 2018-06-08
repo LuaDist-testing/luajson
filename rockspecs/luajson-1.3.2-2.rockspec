@@ -1,5 +1,5 @@
 package = "luajson"
-version = "1.3.2-1"
+version = "1.3.2-2"
 source = {
 	url = "git://github.com/harningt/luajson.git",
 	tag = "1.3.2"
@@ -16,7 +16,6 @@ description = {
 }
 dependencies = {
 	"lua >= 5.1",
-	"lunit >= 0.4",
 	"lpeg >= 0.8.1"
 }
 build = {
