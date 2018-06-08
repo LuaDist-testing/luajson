@@ -6,13 +6,17 @@ local tostring = tostring
 
 local assert = assert
 local jsonutil = require("json.util")
-local util_merge = require("json.util").merge
 local type = type
 
-module("json.encode.others")
+local is_52 = _VERSION == "Lua 5.2"
+local _G = _G
+
+if is_52 then
+	_ENV = nil
+end
 
 -- Shortcut that works
-encodeBoolean = tostring
+local encodeBoolean = tostring
 
 local defaultOptions = {
 	allowUndefined = true,
@@ -20,13 +24,17 @@ local defaultOptions = {
 	undefined = jsonutil.undefined
 }
 
-default = nil -- Let the buildCapture optimization take place
-strict = {
+local modeOptions = {}
+
+modeOptions.strict = {
 	allowUndefined = false
 }
 
-function getEncoder(options)
-	options = options and util_merge({}, defaultOptions, options) or defaultOptions
+local function mergeOptions(options, mode)
+	jsonutil.doOptionMerge(options, false, 'others', defaultOptions, mode and modeOptions[mode])
+end
+local function getEncoder(options)
+	options = options and jsonutil.merge({}, defaultOptions, options) or defaultOptions
 	local function encodeOthers(value, state)
 		if value == options.null then
 			return 'null'
@@ -53,3 +61,17 @@ function getEncoder(options)
 	end
 	return ret
 end
+
+local others = {
+	encodeBoolean = encodeBoolean,
+	mergeOptions = mergeOptions,
+	getEncoder = getEncoder
+}
+
+if not is_52 then
+	_G.json = _G.json or {}
+	_G.json.encode = _G.json.encode or {}
+	_G.json.encode.others = others
+end
+
+return others

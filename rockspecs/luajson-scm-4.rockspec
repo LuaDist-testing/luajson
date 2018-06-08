@@ -1,8 +1,7 @@
 package = "luajson"
-version = "1.2.2-1"
+version = "scm-4"
 source = {
-	url = "http://luaforge.net/frs/download.php/4816/luajson-1.2.2.tar.bz2",
-	md5 = "6b2768c4a2b102bf36308c722de4060a"
+	url = "git://github.com/harningt/luajson.git"
 }
 description = {
 	summary = "customizable JSON decoder/encoder",
@@ -24,11 +23,10 @@ build = {
 	modules = {
 		["json"] = "lua/json.lua",
 		["json.decode"] = "lua/json/decode.lua",
-		["json.decode.array"] = "lua/json/decode/array.lua",
-		["json.decode.calls"] = "lua/json/decode/calls.lua",
+		["json.decode.composite"] = "lua/json/decode/composite.lua",
 		["json.decode.number"] = "lua/json/decode/number.lua",
-		["json.decode.object"] = "lua/json/decode/object.lua",
 		["json.decode.others"] = "lua/json/decode/others.lua",
+		["json.decode.state"] = "lua/json/decode/state.lua",
 		["json.decode.strings"] = "lua/json/decode/strings.lua",
 		["json.decode.util"] = "lua/json/decode/util.lua",
 		["json.encode"] = "lua/json/encode.lua",

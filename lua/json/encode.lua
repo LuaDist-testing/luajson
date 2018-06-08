@@ -5,7 +5,6 @@
 local type = type
 local assert, error = assert, error
 local getmetatable, setmetatable = getmetatable, setmetatable
-local util = require("json.util")
 
 local ipairs, pairs = ipairs, pairs
 local require = require
@@ -15,7 +14,12 @@ local output = require("json.encode.output")
 local util = require("json.util")
 local util_merge, isCall = util.merge, util.isCall
 
-module("json.encode")
+local is_52 = _VERSION == "Lua 5.2"
+local _G = _G
+
+if is_52 then
+	_ENV = nil
+end
 
 --[[
 	List of encoding modules to load.
@@ -33,19 +37,24 @@ local modulesToLoad = {
 -- Modules that have been loaded
 local loadedModules = {}
 
--- Default configuration options to apply
-local defaultOptions = {}
+local json_encode = {}
+
 -- Configuration bases for client apps
-default = nil
-strict = {
+local modes_defined = { "default", "strict" }
+
+json_encode.default = {}
+json_encode.strict = {
 	initialObject = true -- Require an object at the root
 }
 
 -- For each module, load it and its defaults
 for _,name in ipairs(modulesToLoad) do
 	local mod = require("json.encode." .. name)
-	defaultOptions[name] = mod.default
-	strict[name] = mod.strict
+	if mod.mergeOptions then
+		for _, mode in pairs(modes_defined) do
+			mod.mergeOptions(json_encode[mode], mode)
+		end
+	end
 	loadedModules[name] = mod
 end
 
@@ -111,8 +120,8 @@ end
 	the initial encoder is responsible for initializing state
 		State has at least these values configured: encode, check_unique, already_encoded
 ]]
-function getEncoder(options)
-	options = options and util_merge({}, defaultOptions, options) or defaultOptions
+function json_encode.getEncoder(options)
+	options = options and util_merge({}, json_encode.default, options) or json_encode.default
 	local encode = getBaseEncoder(options)
 
 	local function initialEncode(value)
@@ -148,12 +157,19 @@ end
 	check_unique -- used by inner encoders to make sure value is unique
 	already_encoded -- used to unmark a value as unique
 ]]
-function encode(data, options)
-	return getEncoder(options)(data)
+function json_encode.encode(data, options)
+	return json_encode.getEncoder(options)(data)
 end
 
-local mt = getmetatable(_M) or {}
+local mt = {}
 mt.__call = function(self, ...)
-	return encode(...)
+	return json_encode.encode(...)
 end
-setmetatable(_M, mt)
+
+setmetatable(json_encode, mt)
+
+if not is_52 then
+	_G.json = _G.json or {}
+	_G.json.encode = util_merge(json_encode, _G.json.encode)
+end
+return json_encode
